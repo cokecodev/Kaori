@@ -1,14 +1,14 @@
 const errorMessage = require('../errorMessage.js')
 const db = require('../models')
 const { User, Comment } = db
-const { Op } = require("sequelize")
-const { checkIsRouteValid } =require("../middlewares/utils")
+const { Op } = require('sequelize')
+const { checkIsRouteValid } = require('../middlewares/utils')
 
 // dotenv
 require('dotenv').config()
 
 const commentController = {
-  init: async(req, res)=> {
+  getAll: async(req, res) => {
     const perfumeId = Number(req.params.id)
     if (!checkIsRouteValid(perfumeId)) return res.json(errorMessage.routeError)
 
@@ -32,17 +32,13 @@ const commentController = {
         message: '資料拿取成功',
         data: commentData
       })
+
     } catch(err){
       console.log(err)
       return res.json(errorMessage.internalServerError)
     }
-
-
-    
-
   },
   getOne: async (req, res) => {
-    //const { commentId } = req.body // TODO:這邊要再想一下!!!!
     const commentId = Number(req.params.commentId)
     if (!checkIsRouteValid(commentId)) return res.json(errorMessage.routeError)
 
@@ -60,11 +56,11 @@ const commentController = {
         message: '資料拿取成功',
         data: commentData
       })
+
     } catch(err){
       console.log(err)
       return res.json(errorMessage.internalServerError)
     }
-
   },
   create: async (req, res) => {
     const { userId } = req.session
@@ -88,6 +84,7 @@ const commentController = {
         message: '成功建立留言!',
         commentId: commentData.id
       })
+
     } catch(err) {
       console.log(err)
       return res.json(errorMessage.internalServerError)
@@ -95,7 +92,7 @@ const commentController = {
   },
   update: async (req, res) => {
     const { content } = req.body
-    const commentId = Number(req.params.commentId) // TODO: 這邊要想一下 
+    const commentId = Number(req.params.commentId)
 
     if(!checkIsRouteValid(commentId)) return res.json(errorMessage.routeError)
     if(!content) return res.json(errorMessage.missingError)
@@ -118,12 +115,9 @@ const commentController = {
       console.log(err)
       return res.json(errorMessage.internalServerError)
     }
-
-
   },
   delete: async (req,res) => {
-    // const { commentId } = req.body
-    const { commentId } = req.params //TODO 這邊要想一下 
+    const { commentId } = req.params
     if(!checkIsRouteValid(commentId)) return res.json(errorMessage.routeError)
 
     try {
@@ -145,8 +139,6 @@ const commentController = {
       return res.json(errorMessage.internalServerError)
     }
   }
-
-  
 }
 
 module.exports = commentController
