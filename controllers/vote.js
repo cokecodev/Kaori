@@ -3,7 +3,7 @@ const { checkIsRouteValid } = require('../middlewares/utils')
 const db = require('../models')
 const { Vote, Perfume } = db
 
-const { QueryTypes,Op } = require('sequelize');
+const { QueryTypes, Op } = require('sequelize');
 const { sequelize } = require('../models');
 
 // dotenv
@@ -23,20 +23,35 @@ const handleVoteFilter = (vote, element) => {
   })
 }
 
+const getBooleanVote = async (perfumeId) => {
+  const springVote = await Vote.count({where:{[Op.and]:[{perfumeId},{spring: true}]}})
+  const summerVote = await Vote.count({where:{[Op.and]:[{perfumeId},{summer: true}]}})
+  const fallVote = await Vote.count({where:{[Op.and]:[{perfumeId},{fall: true}]}})
+  const winterVote = await Vote.count({where:{[Op.and]:[{perfumeId},{winter: true}]}})
+  const dayVote = await Vote.count({where:{[Op.and]:[{perfumeId},{day: true}]}})
+  const nightVote = await Vote.count({where:{[Op.and]:[{perfumeId},{night: true}]}})
+
+  const result = {
+    springVote,
+    summerVote,
+    fallVote,
+    winterVote,
+    dayVote,
+    nightVote
+  }
+  
+  return result
+}
 
 const voteController = {
   vote: async (req, res) => {
     const { spring, summer, fall, winter, day, night, longevity, silage, gender, ingredient } = req.body
     const { userId } = req.session
     const perfumeId = Number(req.params.id)
-
     
     if (!checkIsRouteValid(perfumeId)) return res.json(errorMessage.routeError)
     if (!userId) return res.json(errorMessage.unauthorized)
-    if (!spring || !summer || !fall || !winter || !day || !night || !longevity || !silage || !gender || !ingredient) return res.json(errorMessage.missingError)
-    
-
-    // TODO: ingredient 寫入之前要先形式轉換!
+    if (spring.length === 0 || summer.length === 0 || fall.length === 0 || winter.length === 0 || day.length === 0 || night.length === 0 || !longevity || !silage || !gender || !ingredient) return res.json(errorMessage.missingError)
     const inputValues = {
       perfumeId,
       userId,
@@ -55,7 +70,6 @@ const voteController = {
     const queryOperator = {
       [Op.and]:[{perfumeId},{userId}]
     }
-
     
     try {
       // 避免重複投票
@@ -89,18 +103,12 @@ const voteController = {
     if (!checkIsRouteValid(perfumeId)) return res.json(errorMessage.routeError)
 
     try {
-
       // PART 1
-      const springVote = await Vote.count({where:{[Op.and]:[{perfumeId},{spring: true}]}})
-      const summerVote = await Vote.count({where:{[Op.and]:[{perfumeId},{summer: true}]}})
-      const fallVote = await Vote.count({where:{[Op.and]:[{perfumeId},{fall: true}]}})
-      const winterVote = await Vote.count({where:{[Op.and]:[{perfumeId},{winter: true}]}})
-      const dayVote = await Vote.count({where:{[Op.and]:[{perfumeId},{day: true}]}})
-      const nightVote = await Vote.count({where:{[Op.and]:[{perfumeId},{night: true}]}})
+      const booleanResObj = await getBooleanVote(perfumeId)
 
       // PART 2
       const handleSQL = (columnName, perfumeId) => {
-        const SQL = `SELECT COUNT(${columnName})As columnNumber,${columnName} AS columnValue FROM Votes WHERE perfumeId = ${perfumeId} GROUP BY ${columnName}`
+        const SQL = `SELECT COUNT(${columnName})As totalVote,${columnName} AS name FROM Votes WHERE perfumeId = ${perfumeId} GROUP BY ${columnName}`  // 2022-12-05 配合前端 統一'非布林'的投票資料 key 名稱 ( 因為 sequlize 的欄位限制，應該是沒辦法直接用 { 項目:數值 } 的形式輸出 )
         return(SQL)
       }
 
@@ -137,35 +145,25 @@ const voteController = {
 
         // 壓平陣列結構 -> [ {},{},{},{},{},{},{},{},{} ]
       voteDataArr = voteDataArr.flat(1)
-      let ingredientsArr = JSON.parse(ingredientDataFormPerfume.ingredient)
-      
+      let ingredientsArr = (ingredientDataFormPerfume.ingredient).split(',') // 2022-12-02 配合前端的狀態修改資料型式! ( 從 ["apple","apple1","apple3"] 變成 apple,apple2,apple3 )
+
         // 把 ingredientsArr 內容 ( 所有的香水原料 ) 全部一起算完
       let ingredientVoteResult = []
       for(let i = 0; i < ingredientsArr.length; i++) {
         const result = handleVoteFilter(voteDataArr,ingredientsArr[i])
         ingredientVoteResult.push(result)
       }
-      
 
       const voteResults = [{
-          spring: springVote
-        },{
-          summer: summerVote
-        },{
-          fall: fallVote
-        },{
-          winter: winterVote
-        },{
-          day: dayVote
-        },{
-          night: nightVote
-        },{
-          longevity: longevityVote[0] 
-        },{
-          silage: silageVote[0]
-        },{
-          gender: genderVote[0]
-        },{
+          spring: booleanResObj.springVote,
+          summer: booleanResObj.summerVote,
+          fall: booleanResObj.fallVote,
+          winter: booleanResObj.winterVote,
+          day: booleanResObj.dayVote,
+          night: booleanResObj.nightVote,
+          longevity: longevityVote[0] ,
+          silage: silageVote[0],
+          gender: genderVote[0],
           ingredient: ingredientVoteResult
         }
       ]
@@ -174,6 +172,74 @@ const voteController = {
         ok: 1,
         message: '香水的投票資料拿取成功',
         data: voteResults
+      })
+
+    } catch(err) {
+      console.log(err)
+      return res.json(errorMessage.internalServerError)
+    }
+  },
+  getPerfumeBooleanVote: async(req, res) => {
+    const perfumeId = Number(req.params.id)
+    if (!checkIsRouteValid(perfumeId)) return res.json(errorMessage.routeError)
+    
+    try {
+      const booleanResObj = await getBooleanVote(perfumeId)
+      const voteResults = [{
+          spring: booleanResObj.springVote,
+          summer: booleanResObj.summerVote,
+          fall: booleanResObj.fallVote,
+          winter: booleanResObj.winterVote,
+          day: booleanResObj.dayVote,
+          night: booleanResObj.nightVote,
+        }
+      ]
+  
+      return res.json({
+        ok: 1,
+        message: '香水的布林投票資料拿取成功',
+        data: voteResults
+      })
+
+    } catch(err) {
+      console.log(err)
+      return res.json(errorMessage.internalServerError)
+    }
+  },
+  getVoteByUserId: async(req, res) => {
+    const { userId } = req.session
+    const perfumeId = Number(req.params.id)
+
+    if (!checkIsRouteValid(perfumeId)) return res.json(errorMessage.routeError)
+    if (!userId) return res.json(errorMessage.unauthorized)
+    
+    try {
+      const isVoteExist = await Vote.findOne({
+        where: {
+          [Op.and]:[{perfumeId},{userId}]
+        },
+        raw: true,
+        attributes:{ 
+          exclude:[
+            'createdAt',
+            'updatedAt',
+            'perfumeId',
+            'userId'
+          ]
+        }
+      }) 
+
+      if(!isVoteExist) {
+        return res.json({
+          ok: 0,
+          message: '還沒投票喔~',
+        })
+      }
+      
+      return res.json({
+        ok: 1,
+        message: '香水的投票資料拿取成功',
+        data: isVoteExist
       })
 
     } catch(err) {
