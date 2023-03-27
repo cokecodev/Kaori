@@ -8,16 +8,17 @@ const creatorController = {
   getCreatorById: async (req, res) => {
     const creatorId = Number(req.params.creatorId)
     if (!checkIsRouteValid(creatorId)) return res.json(errorMessage.routeError)
+    let creatorData = null
 
     try {
-      const creatorData = await Creator.findByPk(creatorId,{
+      creatorData = await Creator.findByPk(creatorId,{
           attributes: { 
             exclude: ['createdAt', 'updatedAt']
           }
         }
       )
       
-      if (!creatorData) return res.json(errorMessage.internalServerError)
+      if (!creatorData) return res.json(errorMessage.dataNotFound)
 
       return res.status(200).json({
         ok: 1,

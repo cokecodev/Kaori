@@ -8,16 +8,17 @@ const brandController = {
   getBrandById: async (req, res) => {
     const brandId = Number(req.params.brandId)
     if (!checkIsRouteValid(brandId)) return res.json(errorMessage.routeError)
+    let brandData = null
 
     try {
-      const brandData = await Brand.findByPk(brandId,{
+      brandData = await Brand.findByPk(brandId,{
           attributes: { 
             exclude: ['createdAt', 'updatedAt']
           }
         }
       )
       
-      if (!brandData) return res.json(errorMessage.internalServerError)
+      if (!brandData) return res.json(errorMessage.dataNotFound)
 
       return res.status(200).json({
         ok: 1,
@@ -71,8 +72,8 @@ const brandController = {
         ],
       })
       
-      if (!brandData ) return res.json(errorMessage.internalServerError)
-      if (brandData.length === 0 ) return res.json(errorMessage.dataNotFound)
+      if (!brandData) res.json(errorMessage.internalServerError)
+      if (brandData.length === 0 ) res.json(errorMessage.dataNotFound)
 
       return res.status(200).json({
         ok: 1,
