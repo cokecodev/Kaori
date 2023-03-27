@@ -64,7 +64,7 @@ const perfumeController = {
           exclude: ['createdAt', 'updatedAt']
         },
         order: [
-          ['perfumeName', 'ASC'],
+          ['id', 'ASC'],
         ],
       })
 

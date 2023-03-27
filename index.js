@@ -21,6 +21,7 @@ const cors = require('cors');
 app.use(cors({
     origin: [
       'http://localhost:3000',
+      'https://kaori-frontend.netlify.app',
     ],
     credentials: true,
     sameSite: 'none',
@@ -30,11 +31,21 @@ app.use(cors({
 // session
 const session = require('express-session');
 const SECRET = process.env.SESSION_SECRET
-app.use(session({
+const sess = {
   secret: SECRET,
   resave: false,
   saveUninitialized: true,
-}))
+  cookie: {}
+}
+app.use(session(sess))
+
+// heroku (production) 環境的 session 相關設定
+// sess.cookie.httpOnly = true (預設就是 true)
+if (app.get('env') === 'production') {
+  app.set('trust proxy', 1) // trust first proxy
+  sess.cookie.secure = true // serve secure cookies
+  sess.cookie.sameSite = 'none'
+}
 
 // body-parser
 const bodyParser = require('body-parser')
