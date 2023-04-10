@@ -17,7 +17,7 @@
 後端採用 Express、Sequelize 開發，部署在 heroku，並使用 clearDB 支援 MySQL 資料庫。
 
 ## 🏠 Pages
-- 👀 [**Demo**](https://kaori-frontend.netlify.app/)
+- 👀 [**前端 Demo**](https://kaori-frontend.netlify.app/)
 - [**Kaori Frontend repository**](https://github.com/cokecodev/Kaori-frontend)
 - [**Kaori Backend repository**](https://github.com/cokecodev/Kaori-backend)
 - db structure (coming soon)
@@ -141,3 +141,9 @@
  ┣ 📜.example.env   # 這邊記得把檔名改成 .env
  ┗ 📜index.js
 ```
+
+## 資料來源 Resource
+- [ 香水資訊網站 Fragrantica](https://www.fragrantica.com/)
+
+## 聲明
+ 本網站僅作為個人練習用，註冊時請勿使用真實資料。另本網站所包含之圖片及內容僅做練習使用，不做任何商業用途。
